@@ -35,30 +35,29 @@ class UploadWorker(QObject):
             "*.jpeg",
             "*.png",
             "*.webp",
+            "*.bmp",
         ):
             images.extend(folder.glob(ext))
 
+        images.sort()
+
         total = len(images)
+
+        if total == 0:
+            self.error.emit("No images found.")
+            return
 
         results = []
 
         for index, image in enumerate(images, start=1):
 
-            result = self.service.upload_image(
-                str(image)
-            )
+            result = self.service.upload_image(image)
 
+            result["name"] = image.name
             result["local_file"] = str(image)
 
-            # results.append(result)
+            results.append(result)
 
-            # self.progress.emit(index, total)
-            result["name"] = image.name
-
-        result["local_file"] = str(image)
-
-        results.append(result)
-
-        self.progress.emit(index, total)
+            self.progress.emit(index, total)
 
         self.finished.emit(results)

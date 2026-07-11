@@ -13,14 +13,15 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import QThread
 
 from app.services.cloudinary_service import CloudinaryService
-from app.workers.upload_worker import UploadWorker
-from app.ui.dialogs.upload_progress_dialog import UploadProgressDialog
-from app.models.cloudinary_model import CloudinaryModel
-from app.services.cloudinary_config_service import (
-    CloudinaryConfigService,
-)
+from app.services.cloudinary_config_service import CloudinaryConfigService
 from app.services.project_context import ProjectContext
 from app.services.image_database_service import ImageDatabaseService
+
+from app.models.cloudinary_model import CloudinaryModel
+
+from app.workers.upload_worker import UploadWorker
+
+from app.ui.dialogs.upload_progress_dialog import UploadProgressDialog
 
 
 class CloudinaryPage(QWidget):
@@ -28,11 +29,12 @@ class CloudinaryPage(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.service = None
         self.config_service = CloudinaryConfigService()
+
         self.thread = None
         self.worker = None
         self.progress_dialog = None
+
         self.build_ui()
         self.load_settings()
 
@@ -78,18 +80,20 @@ class CloudinaryPage(QWidget):
         layout.addWidget(self.log)
 
         self.test_btn.clicked.connect(self.test_connection)
-        self.upload_btn.clicked.connect(self.upload_folder)
         self.save_btn.clicked.connect(self.save_settings)
+        self.upload_btn.clicked.connect(self.upload_folder)
+
+    # -----------------------------------------------------
 
     def test_connection(self):
 
-        self.service = CloudinaryService(
+        service = CloudinaryService(
             self.cloud_name.text(),
             self.api_key.text(),
             self.api_secret.text(),
         )
 
-        ok, message = self.service.test_connection()
+        ok, message = service.test_connection()
 
         if ok:
 
@@ -110,6 +114,39 @@ class CloudinaryPage(QWidget):
                 "Cloudinary",
                 message,
             )
+
+    # -----------------------------------------------------
+
+    def save_settings(self):
+
+        config = CloudinaryModel(
+            cloud_name=self.cloud_name.text(),
+            api_key=self.api_key.text(),
+            api_secret=self.api_secret.text(),
+        )
+
+        self.config_service.save(config)
+
+        QMessageBox.information(
+            self,
+            "Saved",
+            "Cloudinary settings saved.",
+        )
+
+    # -----------------------------------------------------
+
+    def load_settings(self):
+
+        config = self.config_service.load()
+
+        if config is None:
+            return
+
+        self.cloud_name.setText(config.cloud_name)
+        self.api_key.setText(config.api_key)
+        self.api_secret.setText(config.api_secret)
+
+    # -----------------------------------------------------
 
     def upload_folder(self):
 
@@ -146,70 +183,82 @@ class CloudinaryPage(QWidget):
             self.upload_finished
         )
 
+        self.worker.error.connect(
+            self.upload_error
+        )
+
         self.worker.finished.connect(
             self.thread.quit
         )
 
+        self.thread.finished.connect(
+            self.thread.deleteLater
+        )
+
         self.thread.start()
+
+    # -----------------------------------------------------
+
+    def upload_error(self, message):
+
+        if self.progress_dialog:
+            self.progress_dialog.close()
+
+        QMessageBox.warning(
+            self,
+            "Upload Error",
+            message,
+        )
+
+        self.log.append(message)
+
+    # -----------------------------------------------------
 
     def upload_finished(self, results):
 
-     self.progress_dialog.close()
+        if self.progress_dialog:
+            self.progress_dialog.finish()
 
-    project = ProjectContext.get_current_project()
+        project = ProjectContext.get_current_project()
 
-    db = ImageDatabaseService(project)
+        print("=" * 60)
+        print("Current Project :", project)
+        print("Exists :", project.exists() if project else None)
+        print("=" * 60)
 
-    success = 0
+        db = ImageDatabaseService(project)
 
-    for result in results:
+        print("Images JSON :", db.file)
 
-        if result["success"]:
+        success = 0
 
-            db.add_upload({
-                "name": result["name"],
-                "local_file": result["local_file"],
-                "cloudinary_url": result["url"],
-                "public_id": result["public_id"],
-            })
+        for result in results:
 
-            success += 1
+            print(result)
 
-    QMessageBox.information(
-        self,
-        "Upload Complete",
-        f"{success} images uploaded successfully."
-    )
+            if result.get("success"):
 
-    self.log.append(
-        f"Uploaded {success} images."
-    )
+                db.add_upload({
+                    "name": result["name"],
+                    "local_file": result["local_file"],
+                    "cloudinary_url": result["url"],
+                    "public_id": result["public_id"],
+                })
 
+                success += 1
 
-def save_settings(self):
+            else:
 
-    config = CloudinaryModel(
-        cloud_name=self.cloud_name.text(),
-        api_key=self.api_key.text(),
-        api_secret=self.api_secret.text(),
-    )
+                self.log.append(
+                    f"❌ {result.get('name','')} : {result.get('error','Unknown Error')}"
+                )
 
-    self.config_service.save(config)
+        QMessageBox.information(
+            self,
+            "Upload Complete",
+            f"{success} images uploaded successfully.",
+        )
 
-    QMessageBox.information(
-        self,
-        "Saved",
-        "Cloudinary settings saved successfully.",
-    )
-
-
-def load_settings(self):
-
-    config = self.config_service.load()
-
-    if config is None:
-        return
-
-    self.cloud_name.setText(config.cloud_name)
-    self.api_key.setText(config.api_key)
-    self.api_secret.setText(config.api_secret)
+        self.log.append(
+            f"Uploaded {success} images."
+        )

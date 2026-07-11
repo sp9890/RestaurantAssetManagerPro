@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QPushButton,
     QHBoxLayout,
+    QLabel,
 )
 
 from app.services.category_service import CategoryService
@@ -20,7 +21,9 @@ class MenuItemDialog(QDialog):
         super().__init__()
 
         self.setWindowTitle("Add Menu Item")
-        self.resize(550, 420)
+        self.resize(550, 480)
+
+        self.images = []
 
         self.build_ui()
 
@@ -30,38 +33,35 @@ class MenuItemDialog(QDialog):
 
         form = QFormLayout()
 
-        # Menu Name
         self.name_edit = QLineEdit()
 
-        # Category
         self.category_combo = QComboBox()
 
         for category in CategoryService().get_categories():
             self.category_combo.addItem(category.name)
 
-        # Price
         self.price_edit = QLineEdit()
 
-        # Description
         self.description_edit = QTextEdit()
 
-        # Images
         self.image_combo = QComboBox()
 
-        images = ImageService().get_last_images()
+        self.images = ImageService().get_last_images()
 
-        for image in images:
+        for image in self.images:
             self.image_combo.addItem(image["name"])
+
+        self.match_label = QLabel("")
 
         form.addRow("Menu Name", self.name_edit)
         form.addRow("Category", self.category_combo)
         form.addRow("Price", self.price_edit)
         form.addRow("Description", self.description_edit)
         form.addRow("Image", self.image_combo)
+        form.addRow("", self.match_label)
 
         layout.addLayout(form)
 
-        # Buttons
         buttons = QHBoxLayout()
 
         cancel = QPushButton("Cancel")
@@ -76,28 +76,36 @@ class MenuItemDialog(QDialog):
 
         layout.addLayout(buttons)
 
-        # Auto image matching
-        self.name_edit.editingFinished.connect(
+        self.name_edit.textChanged.connect(
             self.auto_match_image
         )
 
     def auto_match_image(self):
 
-        image_names = []
-
-        for i in range(self.image_combo.count()):
-            image_names.append(
-                self.image_combo.itemText(i)
-            )
+        image_names = [
+            image["name"]
+            for image in self.images
+        ]
 
         match = ImageMatcher.find_best_match(
             self.name_edit.text(),
             image_names,
         )
 
-        if match:
+        if not match:
 
-            index = self.image_combo.findText(match)
+            self.match_label.setText(
+                "❌ No matching image found"
+            )
 
-            if index >= 0:
-                self.image_combo.setCurrentIndex(index)
+            return
+
+        index = self.image_combo.findText(match)
+
+        if index >= 0:
+
+            self.image_combo.setCurrentIndex(index)
+
+            self.match_label.setText(
+                f"✅ Auto matched: {match}"
+            )

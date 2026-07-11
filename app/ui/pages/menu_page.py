@@ -1,3 +1,5 @@
+from tkinter import dialog
+
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -10,6 +12,8 @@ from PySide6.QtWidgets import (
 from app.models.menu_item_model import MenuItem
 from app.services.menu_service import MenuService
 from app.ui.dialogs.menu_item_dialog import MenuItemDialog
+from app.services.project_context import ProjectContext
+from app.services.image_database_service import ImageDatabaseService
 
 
 class MenuPage(QWidget):
@@ -55,28 +59,66 @@ class MenuPage(QWidget):
 
     def add_item(self):
 
-        dialog = MenuItemDialog()
+     dialog = MenuItemDialog()
 
-        if not dialog.exec():
+     if not dialog.exec():
          return
 
-        try:
-            price = float(dialog.price_edit.text())
-        except ValueError:
-            price = 0
+    try:
+        price = float(dialog.price_edit.text())
+    except ValueError:
+        price = 0
 
-        item = MenuItem(
-            name=dialog.name_edit.text(),
-            category=dialog.category_combo.currentText(),
-            price=price,
-            description=dialog.description_edit.toPlainText(),
-            image=dialog.image_combo.currentText(),
-        )
+    selected_image = dialog.image_combo.currentText()
 
-        self.service.add_item(item)
+    cloudinary_url = ""
+    public_id = ""
 
-        self.load_menu()
+    project = ProjectContext.get_current_project()
 
+    if project is not None:
+
+        db = ImageDatabaseService(project)
+
+        images = db.load()
+
+        for image in images:
+
+            if image["name"] == selected_image:
+
+                cloudinary_url = image.get(
+                    "cloudinary_url",
+                    ""
+                )
+
+                public_id = image.get(
+                    "public_id",
+                    ""
+                )
+
+                break
+
+    item = MenuItem(
+
+        name=dialog.name_edit.text(),
+
+        category=dialog.category_combo.currentText(),
+
+        price=price,
+
+        description=dialog.description_edit.toPlainText(),
+
+        image=selected_image,
+
+        cloudinary_url=cloudinary_url,
+
+        public_id=public_id,
+
+    )
+
+    self.service.add_item(item)
+
+    self.load_menu()
     def delete_item(self):
 
         row = self.menu_list.currentRow()

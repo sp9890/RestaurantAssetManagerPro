@@ -12,4 +12,11 @@ class MenuItem:
 
     description: str
 
+    # Local image filename
     image: str
+
+    # Cloudinary image URL
+    cloudinary_url: str = ""
+
+    # Cloudinary public id
+    public_id: str = ""

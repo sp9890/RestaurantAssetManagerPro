@@ -1,6 +1,8 @@
+from pathlib import Path
+
 import cloudinary
-import cloudinary.uploader
 import cloudinary.api
+import cloudinary.uploader
 
 
 class CloudinaryService:
@@ -14,6 +16,10 @@ class CloudinaryService:
             secure=True,
         )
 
+    # -------------------------
+    # Connection
+    # -------------------------
+
     def test_connection(self):
 
         try:
@@ -23,12 +29,22 @@ class CloudinaryService:
         except Exception as e:
             return False, str(e)
 
-    def upload_image(self, image_path, folder="restaurant-assets"):
+    # -------------------------
+    # Upload One Image
+    # -------------------------
+
+    def upload_image(
+        self,
+        image_path,
+        folder="restaurant-assets",
+    ):
 
         try:
 
+            image_path = Path(image_path)
+
             result = cloudinary.uploader.upload(
-                image_path,
+                str(image_path),
                 folder=folder,
                 overwrite=True,
                 resource_type="image",
@@ -36,25 +52,74 @@ class CloudinaryService:
 
             return {
                 "success": True,
+                "name": image_path.name,
+                "local_file": str(image_path),
                 "url": result["secure_url"],
                 "public_id": result["public_id"],
+                "width": result.get("width"),
+                "height": result.get("height"),
+                "format": result.get("format"),
+                "bytes": result.get("bytes"),
             }
 
         except Exception as e:
 
             return {
                 "success": False,
+                "name": Path(image_path).name,
+                "local_file": str(image_path),
                 "error": str(e),
             }
+
+    # -------------------------
+    # Delete Image
+    # -------------------------
 
     def delete_image(self, public_id):
 
         try:
 
-            cloudinary.uploader.destroy(public_id)
+            result = cloudinary.uploader.destroy(public_id)
 
-            return True
+            return result.get("result") == "ok"
 
         except Exception:
-
             return False
+
+    # -------------------------
+    # Upload Multiple Images
+    # -------------------------
+
+    def upload_folder(
+        self,
+        folder,
+        extensions=None,
+    ):
+
+        if extensions is None:
+
+            extensions = {
+                ".jpg",
+                ".jpeg",
+                ".png",
+                ".webp",
+                ".bmp",
+            }
+
+        folder = Path(folder)
+
+        results = []
+
+        for file in folder.iterdir():
+
+            if not file.is_file():
+                continue
+
+            if file.suffix.lower() not in extensions:
+                continue
+
+            results.append(
+                self.upload_image(file)
+            )
+
+        return results

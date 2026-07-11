@@ -1,1 +1,26 @@
-[]
+[
+    {
+        "name": "Hot_Chocolate.jpg",
+        "local_file": "C:\\Users\\homep\\Downloads\\23\\Hot_Chocolate.jpg",
+        "cloudinary_url": "https://res.cloudinary.com/diiqbcslw/image/upload/v1783759485/restaurant-assets/yq17kgt8wcwsdekmlt9x.jpg",
+        "public_id": "restaurant-assets/yq17kgt8wcwsdekmlt9x"
+    },
+    {
+        "name": "Nescafe.jpg",
+        "local_file": "C:\\Users\\homep\\Downloads\\23\\Nescafe.jpg",
+        "cloudinary_url": "https://res.cloudinary.com/diiqbcslw/image/upload/v1783759486/restaurant-assets/vaxw6h6fhgug6nvuntsb.jpg",
+        "public_id": "restaurant-assets/vaxw6h6fhgug6nvuntsb"
+    },
+    {
+        "name": "Hot_Chocolate.jpg",
+        "local_file": "C:\\Users\\homep\\Downloads\\23\\Hot_Chocolate.jpg",
+        "cloudinary_url": "https://res.cloudinary.com/diiqbcslw/image/upload/v1783763525/restaurant-assets/wtnbz09txrvfmyxuqgib.jpg",
+        "public_id": "restaurant-assets/wtnbz09txrvfmyxuqgib"
+    },
+    {
+        "name": "Nescafe.jpg",
+        "local_file": "C:\\Users\\homep\\Downloads\\23\\Nescafe.jpg",
+        "cloudinary_url": "https://res.cloudinary.com/diiqbcslw/image/upload/v1783763526/restaurant-assets/og3iegezwx64gvbxmbia.jpg",
+        "public_id": "restaurant-assets/og3iegezwx64gvbxmbia"
+    }
+]
